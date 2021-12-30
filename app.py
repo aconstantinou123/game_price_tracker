@@ -28,12 +28,9 @@ c = CurrencyConverter()
 workbook = pd.ExcelFile(f'{INPUT_FILE_PATH}')
 sheets = workbook.sheet_names
 
-if not PLATFORMS:
-    PLATFORMS = sheets
-
 df = pd.concat([pd.read_excel(workbook, sheet_name=s)
                 .assign(Platform=s) for s in sheets
-                if s in PLATFORMS])
+                if not PLATFORMS or s in PLATFORMS])
 
 prices = []
 print('Collecting prices from www.pricecharting.com')
@@ -54,20 +51,16 @@ for index, row in df.iterrows():
     data = r.text
     soup = BeautifulSoup(data, features='html.parser')
 
-    price_html_id = '' 
-    if row['Condition'] == 'C':
-        price_html_id = 'complete_price'
-    elif row['Condition'] == 'L':
-        price_html_id == 'used_price'
-    elif row['Condition'] == 'N':
-         price_html_id == 'new_price'
-    elif row['Condition'] == 'G':
-         price_html_id == 'graded_price'
-    elif row['Condition'] == 'B':
-         price_html_id == 'box_only_price'
-    elif row['Condition'] == 'M':
-         price_html_id == 'manual_only_price'
-
+    condition_lookup = {
+        'C': 'complete_price',
+        'L': 'used_price',
+        'N': 'new_price',
+        'G': 'graded_price',
+        'B': 'box_only_price',
+        'M': 'manual_only_price',
+    }
+    price_html_id = condition_lookup[row['Condition']] 
+   
     try:
         price_html = soup.find(id=price_html_id)
         price_text = price_html.find(class_='price js-price').text
