@@ -14,8 +14,7 @@ INPUT_FILE_PATH = argv[1]
 OUTPUT_FILE_PATH = argv[2]
 
 try:
-    PLATFORMS = argv[4].split(',')
-    print(PLATFORMS)
+    PLATFORMS = [x.strip() for x in argv[4].split(',')] 
 except:
     PLATFORMS = None
 
