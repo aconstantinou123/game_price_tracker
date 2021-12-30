@@ -12,6 +12,13 @@ if len(argv) < 3:
 
 INPUT_FILE_PATH = argv[1]
 OUTPUT_FILE_PATH = argv[2]
+
+try:
+    PLATFORMS = argv[4].split(',')
+    print(PLATFORMS)
+except:
+    PLATFORMS = None
+
 try:
     CURRENCY = argv[3]
 except IndexError:
@@ -21,8 +28,13 @@ c = CurrencyConverter()
 
 workbook = pd.ExcelFile(f'{INPUT_FILE_PATH}')
 sheets = workbook.sheet_names
+
+if not PLATFORMS:
+    PLATFORMS = sheets
+
 df = pd.concat([pd.read_excel(workbook, sheet_name=s)
-                .assign(Platform=s) for s in sheets])
+                .assign(Platform=s) for s in sheets
+                if s in PLATFORMS])
 
 prices = []
 print('Collecting prices from www.pricecharting.com')
@@ -65,7 +77,7 @@ for index, row in df.iterrows():
 
         if CURRENCY != 'USD':
             price = round(c.convert(price, 'USD', CURRENCY), 2)
-
+        # print(f'{row["Platform"]}, {row["Title"]}: {price} {CURRENCY}')
         prices.append(price)
     except AttributeError:
         price = 0.00
