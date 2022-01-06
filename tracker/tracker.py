@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import aiohttp
 import asyncio
+import argparse
 from urllib import parse
 from sys import argv
 from bs4 import BeautifulSoup
@@ -96,8 +97,8 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         writer.save()
         print('Done!')
 
+
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--inputfile', type=str)
     parser.add_argument('-o', '--outputfile', type=str)
