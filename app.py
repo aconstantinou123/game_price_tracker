@@ -7,27 +7,9 @@ from sys import argv
 from bs4 import BeautifulSoup
 from currency_converter import CurrencyConverter
 
-
-if len(argv) < 3:
-    raise AttributeError('Missing args')
-
-INPUT_FILE_PATH = argv[1]
-OUTPUT_FILE_PATH = argv[2]
-
-try:
-    PLATFORMS = [x.strip() for x in argv[4].split(',')] 
-except:
-    PLATFORMS = None
-
-try:
-    CURRENCY = argv[3]
-except IndexError:
-    CURRENCY = 'USD'
-
 c = CurrencyConverter()
 
-
-async def get_price(session, url, row):
+async def get_price(session, url, row, currency, verbosity):
     async with session.get(url) as r:
         data = await r.text()
         soup = BeautifulSoup(data, features='html.parser')
@@ -48,9 +30,10 @@ async def get_price(session, url, row):
             price = float(("".join(line.strip() 
                         for line in price_text.split("\n")).replace('$', '')))
 
-            if CURRENCY != 'USD':
-                price = round(c.convert(price, 'USD', CURRENCY), 2)
-            # print(f'{row["Platform"]}, {row["Title"]}: {price} {CURRENCY}')
+            if currency != 'USD':
+                price = round(c.convert(price, 'USD', currency), 2)
+            if verbosity == 'DEBUG':
+                print(f'{row["Platform"]}, {row["Title"]}: {price} {currency}')
             return price
         except AttributeError:
             price = 0.00
@@ -58,14 +41,16 @@ async def get_price(session, url, row):
             return price
 
 
-async def main():
+async def main(inputfile, outputfile, currency, platforms, verbosity):
+    if platforms:
+        platforms = [x.strip() for x in platforms.split(',')]
     async with aiohttp.ClientSession() as session:
-        workbook = pd.ExcelFile(f'{INPUT_FILE_PATH}')
+        workbook = pd.ExcelFile(f'{inputfile}')
         sheets = workbook.sheet_names
 
         df = pd.concat([pd.read_excel(workbook, sheet_name=s)
                         .assign(Platform=s) for s in sheets
-                        if not PLATFORMS or s in PLATFORMS])
+                        if not platforms or s in platforms])
 
         tasks = []
         print('Collecting prices from www.pricecharting.com')
@@ -82,15 +67,15 @@ async def main():
 
             url = f'https://www.pricecharting.com/game/{platform}/{title}'
 
-            tasks.append(asyncio.ensure_future(get_price(session, url, row)))
+            tasks.append(asyncio.ensure_future(get_price(session, url, row, currency, verbosity)))
 
         prices = await asyncio.gather(*tasks)
 
         print('Prices collected')
-        df[f'Price ({CURRENCY})'] = prices
+        df[f'Price ({currency})'] = prices
 
-        print(f'Writing results to {OUTPUT_FILE_PATH}')
-        writer = pd.ExcelWriter(f'{OUTPUT_FILE_PATH}', engine='xlsxwriter')
+        print(f'Writing results to {outputfile}')
+        writer = pd.ExcelWriter(f'{outputfile}', engine='xlsxwriter')
         for group, data in df.groupby('Platform'):
             data.drop(columns=['Platform'], inplace=True)
             data.to_excel(writer, group, index=False)
@@ -103,7 +88,7 @@ async def main():
             worksheet.set_column('D:D', None, price_format)
 
         totals_df = pd.DataFrame(df.groupby('Platform').sum())
-        totals_df.loc['Total']= df[f'Price ({CURRENCY})'].sum()
+        totals_df.loc['Total']= df[f'Price ({currency})'].sum()
         totals_df.to_excel(writer, sheet_name='Totals')
         totals_worksheet = writer.sheets['Totals']
         totals_worksheet.set_column('B:B', None, price_format)
@@ -111,4 +96,17 @@ async def main():
         writer.save()
         print('Done!')
 
-asyncio.run(main())
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--inputfile', type=str)
+    parser.add_argument('-o', '--outputfile', type=str)
+    parser.add_argument('-c', '--currency', type=str, default='USD')
+    parser.add_argument('-p', '--platforms', type=str)
+    parser.add_argument('-v', '--verbosity', type=str, default='INFO')
+    args = parser.parse_args().__dict__
+    if args['inputfile'] is None:
+        raise ValueError('Input file path required')
+    if args['outputfile'] is None:
+        raise ValueError('Output file path required')
+    asyncio.run(main(**args))
