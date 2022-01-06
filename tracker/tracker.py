@@ -41,7 +41,7 @@ async def get_price(session, url, row, currency, verbosity):
             return price
 
 
-async def main(inputfile, outputfile, currency, platforms, verbosity):
+async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms, verbosity):
     if platforms:
         platforms = [x.strip() for x in platforms.split(',')]
     async with aiohttp.ClientSession() as session:
@@ -96,7 +96,7 @@ async def main(inputfile, outputfile, currency, platforms, verbosity):
         writer.save()
         print('Done!')
 
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--inputfile', type=str)
@@ -109,4 +109,4 @@ if __name__ == '__main__':
         raise ValueError('Input file path required')
     if args['outputfile'] is None:
         raise ValueError('Output file path required')
-    asyncio.run(main(**args))
+    asyncio.run(generate_prices_spreadsheet(**args))

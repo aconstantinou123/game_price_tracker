@@ -1,2 +1,6 @@
+build
+dist
 venv
 .vscode
+*.egg-info
+example_spreadsheets/game_collection_prices.xlsx
