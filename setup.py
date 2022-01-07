@@ -1,6 +1,17 @@
 import re
 from os import path
 from setuptools import find_packages, setup
+import re
+
+
+with open('tracker/__init__.py', "rt") as fd:
+    vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
+    mo = re.search(vsre, fd.read(), re.MULTILINE)
+    if mo:
+        version = mo.group(1)
+    else:
+        raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+
 
 with open('requirements.txt') as f:
     requirements = f.readlines()
@@ -11,7 +22,7 @@ with open(path.join(this_directory, 'README.md')) as f:
 
 setup(
         name ='vg_price_tracker',
-        version = '0.0.4',
+        version = version,
         author = 'Alex Constantinou',
         author_email = 'a_constantinou@hotmail.co.uk',
         url = 'https://github.com/aconstantinou123/game_price_tracker',
@@ -25,11 +36,11 @@ setup(
                 'gpt = tracker.tracker:main'
             ]
         },
-        classifiers = (
+        classifiers = [
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
-        ),
+        ],
         keywords = 'games collection pandas BeautifulSoup python package',
         install_requires = requirements,
         zip_safe = False
