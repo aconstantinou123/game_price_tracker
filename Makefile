@@ -7,6 +7,9 @@ build:
 
 build-publish: clean build publish
 
+lint:
+	cd tracker && autopep8 --in-place --recursive -a .
+
 publish:
 	python -m twine upload --repository testpypi dist/* 
 

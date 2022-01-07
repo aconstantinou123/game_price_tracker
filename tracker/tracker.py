@@ -10,11 +10,13 @@ from currency_converter import CurrencyConverter
 
 c = CurrencyConverter()
 
+
 def check_file_extension(path):
     _, file_extension = os.path.splitext(path)
     if file_extension != '.xlsx':
-        raise TypeError(f'Incorrect file type: {file_extension}. '+
+        raise TypeError(f'Incorrect file type: {file_extension} - ' +
                         'Input/out files must have extension .xlsx')
+
 
 async def get_price(session, url, row, currency, verbosity):
     async with session.get(url) as r:
@@ -29,13 +31,13 @@ async def get_price(session, url, row, currency, verbosity):
             'B': 'box_only_price',
             'M': 'manual_only_price',
         }
-        price_html_id = condition_lookup[row['Condition']] 
-    
+        price_html_id = condition_lookup[row['Condition']]
+
         try:
             price_html = soup.find(id=price_html_id)
             price_text = price_html.find(class_='price js-price').text
-            price = float(("".join(line.strip() 
-                        for line in price_text.split("\n")).replace('$', '')))
+            price = float(("".join(line.strip()
+                                   for line in price_text.split("\n")).replace('$', '')))
 
             if currency != 'USD':
                 price = round(c.convert(price, 'USD', currency), 2)
@@ -58,12 +60,12 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         df = pd.concat([pd.read_excel(workbook, sheet_name=s)
                         .assign(Platform=s) for s in sheets
                         if not platforms or s in platforms])
-        
+
         allowed_columns = ['Title', 'Region', 'Condition', 'Platform']
-        
+
         if set(allowed_columns) != set(df.columns):
             raise ValueError(f'Incorrect spreadsheet columns: ' +
-                f'{", ".join(list(df.columns))}. Must be {", ".join(allowed_columns)}')
+                             f'{", ".join(list(df.columns))}. Must be {", ".join(allowed_columns)}')
 
         tasks = []
         print('Collecting prices from www.pricecharting.com')
@@ -80,7 +82,14 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
 
             url = f'https://www.pricecharting.com/game/{platform}/{title}'
 
-            tasks.append(asyncio.ensure_future(get_price(session, url, row, currency, verbosity)))
+            tasks.append(
+                asyncio.ensure_future(
+                    get_price(
+                        session,
+                        url,
+                        row,
+                        currency,
+                        verbosity)))
 
         prices = await asyncio.gather(*tasks)
 
@@ -93,7 +102,7 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
             data.drop(columns=['Platform'], inplace=True)
             data.to_excel(writer, group, index=False)
 
-        workbook  = writer.book
+        workbook = writer.book
         price_format = workbook.add_format({'num_format': '0.00'})
         sheets = writer.sheets
         for sheet in sheets:
@@ -101,7 +110,7 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
             worksheet.set_column('D:D', None, price_format)
 
         totals_df = pd.DataFrame(df.groupby('Platform').sum())
-        totals_df.loc['Total']= df[f'Price ({currency})'].sum()
+        totals_df.loc['Total'] = df[f'Price ({currency})'].sum()
         totals_df.to_excel(writer, sheet_name='Totals')
         totals_worksheet = writer.sheets['Totals']
         totals_worksheet.set_column('B:B', None, price_format)
