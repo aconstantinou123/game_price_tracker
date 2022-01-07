@@ -10,6 +10,12 @@ from currency_converter import CurrencyConverter
 
 c = CurrencyConverter()
 
+def check_file_extension(path):
+    _, file_extension = os.path.splitext(path)
+    if file_extension != '.xlsx':
+        raise TypeError(f'Incorrect file type: {file_extension}. '+
+                        'Input/out files must have extension .xlsx')
+
 async def get_price(session, url, row, currency, verbosity):
     async with session.get(url) as r:
         data = await r.text()
@@ -52,6 +58,12 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         df = pd.concat([pd.read_excel(workbook, sheet_name=s)
                         .assign(Platform=s) for s in sheets
                         if not platforms or s in platforms])
+        
+        allowed_columns = ['Title', 'Region', 'Condition', 'Platform']
+        
+        if set(allowed_columns) != set(df.columns):
+            raise ValueError(f'Incorrect spreadsheet columns: ' +
+                f'{", ".join(list(df.columns))}. Must be {", ".join(allowed_columns)}')
 
         tasks = []
         print('Collecting prices from www.pricecharting.com')
@@ -110,4 +122,10 @@ def main():
         raise ValueError('Input file path required')
     if args['outputfile'] is None:
         raise ValueError('Output file path required')
+    check_file_extension(args['inputfile'])
+    check_file_extension(args['outputfile'])
     asyncio.run(generate_prices_spreadsheet(**args))
+
+
+if __name__ == '__main__':
+    main()

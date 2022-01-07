@@ -3,4 +3,5 @@ dist
 venv
 .vscode
 *.egg-info
-example_spreadsheets/game_collection_prices.xlsx
+example_spreadsheets/
+!example_spreadsheets/game_collection.xlsx
