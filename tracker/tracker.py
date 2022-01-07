@@ -67,9 +67,9 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
 
         allowed_columns = ['Title', 'Region', 'Condition', 'Platform']
 
-        if set(allowed_columns) != set(df.columns):
+        if not all([True if col in list(df.columns) else False for col in allowed_columns]):
             raise ValueError(f'Incorrect spreadsheet columns: ' +
-                             f'{", ".join(list(df.columns))}. Must be {", ".join(allowed_columns)}')
+                             f'{", ".join(list(df.columns))}. Must include {", ".join(allowed_columns)}')
 
         tasks = []
         print('Collecting prices from www.pricecharting.com')
