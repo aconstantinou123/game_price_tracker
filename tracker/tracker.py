@@ -31,7 +31,10 @@ async def get_price(session, url, row, currency, verbosity):
             'B': 'box_only_price',
             'M': 'manual_only_price',
         }
-        price_html_id = condition_lookup[row['Condition']]
+        price_html_id = condition_lookup.get(row['Condition'].strip(), None)
+        if price_html_id is None:
+            print(f'ERROR: Unknown condition for {row["Title"]} - {row["Condition"]}. ' +
+                  f'Price may be inaccurate. Must be one of {", ".join(list(condition_lookup.keys()))}')
 
         try:
             price_html = soup.find(id=price_html_id)
@@ -46,7 +49,8 @@ async def get_price(session, url, row, currency, verbosity):
             return price
         except AttributeError:
             price = 0.00
-            print('Missing price', row['Title'])
+            print(f'ERROR: Missing price {row["Title"]} - {row["Platform"]}/{row["Region"]}. ' +
+                  'Check title/platform/region is correct')
             return price
 
 
@@ -70,9 +74,9 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         tasks = []
         print('Collecting prices from www.pricecharting.com')
         for index, row in df.iterrows():
-            title = parse.quote(row['Title'].lower().replace(' ', '-'))
-            console = row['Platform'].lower().replace(' ', '-')
-            region = row['Region'].lower()
+            title = parse.quote(row['Title'].lower().replace(' ', '-').strip())
+            console = row['Platform'].lower().replace(' ', '-').strip()
+            region = row['Region'].lower().strip()
 
             platform = console
             if region == 'pal':
