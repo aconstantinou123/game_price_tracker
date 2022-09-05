@@ -47,7 +47,7 @@ async def get_price(session, url, row, currency, verbosity):
             if verbosity == 'DEBUG':
                 print(f'{row["Platform"]}, {row["Title"]}: {price} {currency}')
             return price
-        except AttributeError:
+        except (AttributeError, ValueError):
             price = 0.00
             print(f'ERROR: Missing price {row["Title"]} - {row["Platform"]}/{row["Region"]}. ' +
                   'Check title/platform/region is correct')
