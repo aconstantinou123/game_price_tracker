@@ -36,7 +36,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'gpt = tracker.tracker:main'
+            'vgpt = tracker.tracker:main'
         ]
     },
     classifiers=[
