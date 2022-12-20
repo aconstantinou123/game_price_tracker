@@ -54,6 +54,19 @@ async def get_price(session, url, row, currency, verbosity):
                   'Check title/platform/region is correct')
             return price
 
+def set_dynamic_column_width(df, worksheet):
+    for idx, col in enumerate(df):
+        series = df[col]
+        max_len = (
+            max(
+                (
+                    series.astype(str).map(len).max(),
+                    len(str(series.name)),
+                )
+            )
+            + 1
+        )
+        worksheet.set_column(idx, idx, max_len)
 
 async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms, verbosity):
     if platforms:
@@ -113,12 +126,16 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         for sheet in sheets:
             worksheet = writer.sheets[sheet]
             worksheet.set_column('D:D', None, price_format)
+            set_dynamic_column_width(df, worksheet)
 
         totals_df = pd.DataFrame(df.groupby('Platform').sum())
         totals_df.loc['Total'] = df[f'Price ({currency})'].sum()
         totals_df.to_excel(writer, sheet_name='Totals')
+
+
         totals_worksheet = writer.sheets['Totals']
         totals_worksheet.set_column('B:B', None, price_format)
+        set_dynamic_column_width(totals_df, totals_worksheet)
 
         writer.save()
         print('Done!')
