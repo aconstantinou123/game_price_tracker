@@ -20,6 +20,7 @@ def check_file_extension(path):
 
 
 async def get_price(session, url, row, currency, verbosity):
+    semaphore = asyncio.Semaphore(50)
     async with semaphore, session.get(url) as r:
         data = await r.text()
         soup = BeautifulSoup(data, features='html.parser')
