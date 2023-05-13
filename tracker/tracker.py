@@ -126,19 +126,18 @@ async def generate_prices_spreadsheet(inputfile, outputfile, currency, platforms
         sheets = writer.sheets
         for sheet in sheets:
             worksheet = writer.sheets[sheet]
-            worksheet.set_column('D:D', None, price_format)
             set_dynamic_column_width(df, worksheet)
-
-        totals_df = pd.DataFrame(df.groupby('Platform').sum())
+            worksheet.set_column(3, 3, None, price_format)
+        totals_df = pd.DataFrame(df.groupby('Platform')[f'Price ({currency})'].sum())
         totals_df.loc['Total'] = df[f'Price ({currency})'].sum()
         totals_df.to_excel(writer, sheet_name='Totals')
 
 
         totals_worksheet = writer.sheets['Totals']
-        totals_worksheet.set_column('B:B', None, price_format)
         set_dynamic_column_width(totals_df, totals_worksheet)
+        totals_worksheet.set_column(1, 1, None, price_format)
 
-        writer.save()
+        writer.close()
         print('Done!')
 
 
